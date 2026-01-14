@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Karnaugh Map Solver - Digital Logic Simplifier</title>
+    <meta name="description" content="Interactive Karnaugh Map solver for 2-5 variables. Simplify Boolean expressions using K-maps, generate optimized Verilog code, and learn digital logic design." />
+    <meta name="keywords" content="karnaugh map, k-map, boolean algebra, digital logic, verilog, quine mccluskey, logic minimization, SOP, POS" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-glow: #60a5fa;
+            --accent: #f97316;
+            --accent-light: #fb923c;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --muted: #f1f5f9;
+            --border: #e2e8f0;
+            --foreground: #1e293b;
+            --muted-foreground: #64748b;
+            --code-bg: #1e293b;
+            --code-text: #f1f5f9;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, var(--muted) 100%);
+            color: var(--foreground);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--muted-foreground);
+            max-width: 600px;
+            margin: 0 auto 1rem;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: var(--muted);
+            color: var(--foreground);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+            color: white;
+            padding: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-content {
+            padding: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        select, button, input {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: var(--primary-glow);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-lg {
+            padding: 0.75rem 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* Mode Toggle Switch */
+        .mode-toggle {
+            display: inline-flex;
+            align-items: center;
+            background: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        .mode-btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--muted-foreground);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .mode-btn.active {
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: var(--border);
+        }
+
+        .truth-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: var(--card);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .truth-table th,
+        .truth-table td {
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .truth-table th {
+            background: var(--muted);
+            font-weight: bold;
+            color: var(--foreground);
+        }
+
+        .truth-table tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .kmap-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .kmap-wrapper {
+            text-align: center;
+            position: relative;
+            display: inline-block;
+        }
+
+        .kmap-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--foreground);
+        }
+
+        .kmap-table {
+            border-collapse: collapse;
+            background: var(--card);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .kmap-cell {
+            width: 3.5rem;
+            height: 3.5rem;
+            border: 1px solid var(--border);
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: var(--transition);
+            background: var(--card);
+            position: relative;
+        }
+
+        .kmap-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .kmap-cell.state-0 {
+            background: var(--card);
+            color: var(--foreground);
+        }
+
+        .kmap-cell.state-1 {
+            background: var(--success);
+            color: white;
+        }
+
+        .kmap-cell.state-X {
+            background: var(--warning);
+            color: white;
+        }
+
+        .header-cell {
+            background: var(--muted);
+            font-weight: bold;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            color: var(--foreground);
+        }
+
+        /* SVG Overlay for K-Map Groups */
+        .kmap-svg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(249, 115, 22, 0.05));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .result-expression {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+
+        .result-expression.empty {
+            color: var(--muted-foreground);
+            font-style: italic;
+            font-weight: normal;
+        }
+
+        /* Circuit Canvas - Scrollable Container */
+        .circuit-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        .circuit-canvas-wrapper {
+            display: inline-block;
+            min-width: 100%;
+        }
+
+        #circuitCanvas {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .verilog-section {
+            margin-top: 2rem;
+        }
+
+        .verilog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.2));
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            border-radius: 0.5rem 0.5rem 0 0;
+            padding: 1rem;
+        }
+
+        .verilog-code {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            border-radius: 0 0 0.5rem 0.5rem;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.5;
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            border-top: none;
+        }
+
+        .help-text {
+            font-size: 0.9rem;
+            color: var(--muted-foreground);
+            margin-top: 0.5rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            fill: currentColor;
+        }
+
+        .group-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .group-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--muted);
+            border-radius: 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .kmap-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .form-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="hero-badge">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.414a1 1 0 0 0-.293-.707l-5.414-5.414A1 1 0 0 0 13.586 2H6z"/>
+                    <path d="M14 2v6h6"/>
+                    <path d="M10 13h-3m0 0L9 11m-2 2l2 2"/>
+                    <path d="M17 13h-3m0 0l2-2m-2 2l2 2"/>
+                </svg>
+                Karnaugh Map Solver
+            </div>
+            <p class="subtitle">
+                Simplify Boolean expressions with interactive K-maps for 2-5 variables. 
+                Generate optimized logic and Verilog code instantly.
+            </p>
+            <div class="badges">
+                <span class="badge">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <rect x="4" y="4" width="6" height="6" fill="currentColor"/>
+                        <rect x="14" y="4" width="6" height="6" fill="currentColor"/>
+                        <rect x="4" y="14" width="6" height="6" fill="currentColor"/>
+                        <rect x="14" y="14" width="6" height="6" fill="currentColor"/>
+                    </svg>
+                    Quine-McCluskey Algorithm
+                </span>
+                <span class="badge">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="currentColor"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    Verilog Generation
+                </span>
+                <span class="badge">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 12l2 2 4-4"/>
+                    </svg>
+                    SOP / POS Mode
+                </span>
+                <span class="badge">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <path d="M8 12h8M12 8v8"/>
+                    </svg>
+                    Circuit Diagram
+                </span>
+            </div>
+        </div>
+
+        <!-- Configuration Section -->
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.414a1 1 0 0 0-.293-.707l-5.414-5.414A1 1 0 0 0 13.586 2H6z"/>
+                    <path d="M14 2v6h6"/>
+                    <path d="M10 13h-3m0 0L9 11m-2 2l2 2"/>
+                    <path d="M17 13h-3m0 0l2-2m-2 2l2 2"/>
+                </svg>
+                Configuration
+            </div>
+            <div class="card-content">
+                <div class="form-group">
+                    <label for="numVars">Variables:</label>
+                    <select id="numVars" onchange="generateTable()">
+                        <option value="2">2 Variables (A,B)</option>
+                        <option value="3">3 Variables (A,B,C)</option>
+                        <option value="4">4 Variables (A,B,C,D)</option>
+                        <option value="5">5 Variables (A,B,C,D,E)</option>
+                    </select>
+                    
+                    <div class="mode-toggle" role="group" aria-label="Output Mode">
+                        <button class="mode-btn active" id="btnSOP" onclick="setMode('SOP')">SOP (1s)</button>
+                        <button class="mode-btn" id="btnPOS" onclick="setMode('POS')">POS (0s)</button>
+                    </div>
+                    
+                    <button class="btn btn-danger" onclick="clearAll()">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                        </svg>
+                        Clear All
+                    </button>
+                </div>
+                <div class="help-text">
+                    Current variables: <span id="currentVars">A, B</span> | 
+                    <strong>SOP:</strong> Sum of Products (groups 1s) | 
+                    <strong>POS:</strong> Product of Sums (groups 0s)
+                </div>
+            </div>
+        </div>
+
+        <!-- Truth Table Section -->
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M3 3h18v18H3V3z" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M8 3v18"/>
+                    <path d="M16 3v18"/>
+                    <path d="M3 9h18"/>
+                    <path d="M3 15h18"/>
+                </svg>
+                Truth Table
+            </div>
+            <div class="card-content">
+                <div class="help-text">
+                    Configure output values: <strong>0</strong> for false, <strong>1</strong> for true, <strong>X</strong> for don't care
+                </div>
+                <div id="truthTableDiv"></div>
+            </div>
+        </div>
+
+        <!-- Karnaugh Map Section -->
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <line x1="9" y1="9" x2="9" y2="15"/>
+                    <line x1="15" y1="9" x2="15" y2="15"/>
+                    <line x1="9" y1="12" x2="15" y2="12"/>
+                </svg>
+                Karnaugh Map
+            </div>
+            <div class="card-content">
+                <div class="help-text">
+                    Click cells to toggle: 0 → 1 → X → 0
+                </div>
+                <div class="kmap-container">
+                    <div id="kmapDiv"></div>
+                </div>
+                <div class="text-center">
+                    <button class="btn btn-lg" onclick="solveKmap()">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.414a1 1 0 0 0-.293-.707l-5.414-5.414A1 1 0 0 0 13.586 2H6z"/>
+                            <path d="M14 2v6h6"/>
+                            <path d="M10 13h-3m0 0L9 11m-2 2l2 2"/>
+                            <path d="M17 13h-3m0 0l2-2m-2 2l2 2"/>
+                        </svg>
+                        Solve K-Map (Simplify)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <polyline points="9,11 12,14 22,4"/>
+                    <path d="m21,3-12,12-4-4"/>
+                </svg>
+                Results
+            </div>
+            <div class="card-content">
+                <div class="result-box">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <svg class="icon" style="color: var(--accent);" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                        <strong>Simplified Boolean Expression (<span id="modeLabel">SOP</span>)</strong>
+                    </div>
+                    <div id="result" class="result-expression empty">
+                        Enter values in the truth table or K-map and click "Solve K-Map" to see the simplified expression
+                    </div>
+                    <div id="groupLegend" class="group-legend"></div>
+                </div>
+
+                <!-- Logic Circuit Diagram -->
+                <div class="circuit-container">
+                    <h4 style="margin-bottom: 1rem; color: var(--foreground);">Logic Circuit Diagram</h4>
+                    <div class="circuit-canvas-wrapper">
+                        <canvas id="circuitCanvas" width="800" height="400" role="img" aria-label="Logic circuit diagram of the solution"></canvas>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button class="btn btn-outline" onclick="generateVerilog()" id="verilogBtn" disabled>
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10,9 9,9 8,9"/>
+                        </svg>
+                        Generate Verilog + Testbench
+                    </button>
+                </div>
+
+                <div id="verilogDiv"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ======================== GLOBAL STATE ========================
+        let numVars = 2;
+        let isSOP = true; // true = Sum of Products (1s), false = Product of Sums (0s)
+        let truthValues = [];
+        let solutionGroups = []; // Stores the calculated groups for visualization
+        const gray2 = ['00', '01', '11', '10'];
+
+        // Colors for visual groups
+        const GROUP_COLORS = [
+            'rgba(239, 68, 68, 0.25)',   // Red
+            'rgba(34, 197, 94, 0.25)',   // Green
+            'rgba(59, 130, 246, 0.25)',  // Blue
+            'rgba(249, 115, 22, 0.25)',  // Orange
+            'rgba(168, 85, 247, 0.25)',  // Purple
+            'rgba(236, 72, 153, 0.25)',  // Pink
+            'rgba(20, 184, 166, 0.25)'   // Teal
+        ];
+        const BORDER_COLORS = ['#ef4444', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ec4899', '#14b8a6'];
+
+        // ======================== INITIALIZATION ========================
+        window.onload = () => generateTable();
+
+        function getVariableNames() {
+            const allVars = ['A', 'B', 'C', 'D', 'E'];
+            return allVars.slice(0, numVars);
+        }
+
+        function generateTable() {
+            numVars = parseInt(document.getElementById('numVars').value);
+            const numRows = 1 << numVars;
+            truthValues = new Array(numRows).fill('0');
+            
+            document.getElementById('currentVars').textContent = getVariableNames().join(', ');
+            
+            createTruthTable();
+            createKMap();
+            clearResults();
+        }
+
+        function setMode(mode) {
+            isSOP = (mode === 'SOP');
+            document.getElementById('btnSOP').className = isSOP ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('btnPOS').className = !isSOP ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('modeLabel').textContent = mode;
+            
+            // Re-solve if we have data
+            const hasData = truthValues.some(v => v === '1' || v === 'X');
+            if (hasData) {
+                solveKmap();
+            }
+        }
+
+        function clearAll() {
+            truthValues = new Array(1 << numVars).fill('0');
+            updateKMapFromTruth();
+            clearResults();
+        }
+
+        function clearResults() {
+            document.getElementById('result').textContent = 'Enter values in the truth table or K-map and click "Solve K-Map" to see the simplified expression';
+            document.getElementById('result').className = 'result-expression empty';
+            document.getElementById('verilogBtn').disabled = true;
+            document.getElementById('verilogDiv').innerHTML = '';
+            document.getElementById('groupLegend').innerHTML = '';
+            solutionGroups = [];
+            
+            // Clear circuit
+            const canvas = document.getElementById('circuitCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Clear SVG overlays
+            clearSvgOverlays();
+        }
+
+        function clearSvgOverlays() {
+            const overlays = document.querySelectorAll('.kmap-svg-overlay');
+            overlays.forEach(svg => svg.innerHTML = '');
+        }
+
+        // ======================== TRUTH TABLE ========================
+        function createTruthTable() {
+            const vars = getVariableNames();
+            let html = '<table class="truth-table"><thead><tr>';
+            
+            for (let v of vars) {
+                html += `<th>${v}</th>`;
+            }
+            html += '<th style="color: var(--accent);">F</th></tr></thead><tbody>';
+
+            const numRows = 1 << numVars;
+            for (let i = 0; i < numRows; i++) {
+                const bin = i.toString(2).padStart(numVars, '0');
+                html += '<tr>';
+                for (let j = 0; j < numVars; j++) {
+                    html += `<td>${bin[j]}</td>`;
+                }
+                html += `<td>
+                    <select onchange="updateValue(${i})" id="val${i}" style="width: 60px; padding: 0.25rem;">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="X">X</option>
+                    </select>
+                </td></tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('truthTableDiv').innerHTML = html;
+        }
+
+        function updateValue(index) {
+            const value = document.getElementById(`val${index}`).value;
+            truthValues[index] = value;
+            updateKMapFromTruth();
+        }
+
+        // ======================== K-MAP RENDERING ========================
+        function createKMap() {
+            let html = '';
+            if (numVars === 2) html = create2VarKMap();
+            else if (numVars === 3) html = create3VarKMap();
+            else if (numVars === 4) html = create4VarKMap();
+            else if (numVars === 5) html = create5VarKMap();
+            
+            document.getElementById('kmapDiv').innerHTML = html;
+            updateKMapFromTruth();
+        }
+
+        function create2VarKMap() {
+            return `
+                <div class="kmap-wrapper" id="kmapWrapper0">
+                    <svg class="kmap-svg-overlay" id="kmapOverlay0"></svg>
+                    <table class="kmap-table" id="kmapTable0">
+                        <tr>
+                            <td class="header-cell"></td>
+                            <td class="header-cell">A=0</td>
+                            <td class="header-cell">A=1</td>
+                        </tr>
+                        <tr>
+                            <td class="header-cell">B=0</td>
+                            <td class="kmap-cell state-0" id="k00" onclick="toggleKMap('k00')">0</td>
+                            <td class="kmap-cell state-0" id="k01" onclick="toggleKMap('k01')">0</td>
+                        </tr>
+                        <tr>
+                            <td class="header-cell">B=1</td>
+                            <td class="kmap-cell state-0" id="k10" onclick="toggleKMap('k10')">0</td>
+                            <td class="kmap-cell state-0" id="k11" onclick="toggleKMap('k11')">0</td>
+                        </tr>
+                    </table>
+                </div>`;
+        }
+
+        function create3VarKMap() {
+            return `
+                <div class="kmap-wrapper" id="kmapWrapper0">
+                    <svg class="kmap-svg-overlay" id="kmapOverlay0"></svg>
+                    <table class="kmap-table" id="kmapTable0">
+                        <tr>
+                            <td class="header-cell"></td>
+                            <td class="header-cell">A=0</td>
+                            <td class="header-cell">A=1</td>
+                        </tr>
+                        ${gray2.map(bc => `
+                            <tr>
+                                <td class="header-cell">BC=${bc}</td>
+                                <td class="kmap-cell state-0" id="k${bc}0" onclick="toggleKMap('k${bc}0')">0</td>
+                                <td class="kmap-cell state-0" id="k${bc}1" onclick="toggleKMap('k${bc}1')">0</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>`;
+        }
+
+        function create4VarKMap() {
+            return `
+                <div class="kmap-wrapper" id="kmapWrapper0">
+                    <svg class="kmap-svg-overlay" id="kmapOverlay0"></svg>
+                    <table class="kmap-table" id="kmapTable0">
+                        <tr>
+                            <td class="header-cell"></td>
+                            ${gray2.map(ab => `<td class="header-cell">AB=${ab}</td>`).join('')}
+                        </tr>
+                        ${gray2.map(cd => `
+                            <tr>
+                                <td class="header-cell">CD=${cd}</td>
+                                ${gray2.map(ab => `
+                                    <td class="kmap-cell state-0" id="k${cd}${ab}" onclick="toggleKMap('k${cd}${ab}')">0</td>
+                                `).join('')}
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>`;
+        }
+
+        function create5VarKMap() {
+            return `
+                <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+                    ${['0', '1'].map((e, idx) => `
+                        <div class="kmap-wrapper" id="kmapWrapper${idx}">
+                            <div class="kmap-title">E = ${e}</div>
+                            <svg class="kmap-svg-overlay" id="kmapOverlay${idx}"></svg>
+                            <table class="kmap-table" id="kmapTable${idx}">
+                                <tr>
+                                    <td class="header-cell"></td>
+                                    ${gray2.map(ab => `<td class="header-cell">AB=${ab}</td>`).join('')}
+                                </tr>
+                                ${gray2.map(cd => `
+                                    <tr>
+                                        <td class="header-cell">CD=${cd}</td>
+                                        ${gray2.map(ab => `
+                                            <td class="kmap-cell state-0" id="k${e}${cd}${ab}" onclick="toggleKMap('k${e}${cd}${ab}')">0</td>
+                                        `).join('')}
+                                    </tr>
+                                `).join('')}
+                            </table>
+                        </div>
+                    `).join('')}
+                </div>`;
+        }
+
+        function getKMapCellId(index) {
+            const bin = index.toString(2).padStart(numVars, '0');
+            if (numVars === 2) {
+                return `k${bin[1]}${bin[0]}`;
+            } else if (numVars === 3) {
+                return `k${bin[1]}${bin[2]}${bin[0]}`;
+            } else if (numVars === 4) {
+                return `k${bin[2]}${bin[3]}${bin[0]}${bin[1]}`;
+            } else if (numVars === 5) {
+                const ab = bin[0] + bin[1];
+                const cd = bin[2] + bin[3];
+                const e = bin[4];
+                return `k${e}${cd}${ab}`;
+            }
+        }
+
+        function getIndexFromKMapId(cellId) {
+            if (numVars === 2) {
+                const b = cellId[1];
+                const a = cellId[2];
+                return parseInt(a + b, 2);
+            } else if (numVars === 3) {
+                const bc = cellId.slice(1, 3);
+                const a = cellId[3];
+                return parseInt(a + bc, 2);
+            } else if (numVars === 4) {
+                const cd = cellId.slice(1, 3);
+                const ab = cellId.slice(3);
+                return parseInt(ab + cd, 2);
+            } else if (numVars === 5) {
+                const e = cellId[1];
+                const cd = cellId.slice(2, 4);
+                const ab = cellId.slice(4);
+                return parseInt(ab + cd + e, 2);
+            }
+            return 0;
+        }
+
+        function toggleKMap(cellId) {
+            const cell = document.getElementById(cellId);
+            if (!cell) return;
+            
+            const index = getIndexFromKMapId(cellId);
+            const currentValue = truthValues[index] || '0';
+            const nextValue = currentValue === '0' ? '1' : (currentValue === '1' ? 'X' : '0');
+            
+            truthValues[index] = nextValue;
+            updateCellAppearance(cell, nextValue);
+            
+            const select = document.getElementById(`val${index}`);
+            if (select) select.value = nextValue;
+        }
+
+        function updateCellAppearance(cell, value) {
+            cell.className = `kmap-cell state-${value}`;
+            cell.textContent = value;
+        }
+
+        function updateKMapFromTruth() {
+            for (let i = 0; i < truthValues.length; i++) {
+                const cellId = getKMapCellId(i);
+                const cell = document.getElementById(cellId);
+                if (cell) {
+                    updateCellAppearance(cell, truthValues[i]);
+                }
+                
+                const select = document.getElementById(`val${i}`);
+                if (select) select.value = truthValues[i];
+            }
+        }
+
+        // ======================== QUINE-McCLUSKEY ALGORITHM ========================
+        function quineMcCluskey(minterms, dontcares, n) {
+            const all = [...minterms, ...dontcares].sort((a, b) => a - b);
+            
+            function toBits(x) { 
+                return x.toString(2).padStart(n, '0'); 
+            }
+            
+            let groups = {};
+            for (let v of all) {
+                const bits = toBits(v);
+                const ones = bits.split('').filter(ch => ch === '1').length;
+                if (!groups[ones]) groups[ones] = [];
+                groups[ones].push({ bits, covers: [v], combined: false });
+            }
+
+            let primeImplicants = [];
+
+            while (true) {
+                const nextGroups = {};
+                let combinedAny = false;
+                const groupKeys = Object.keys(groups).map(Number).sort((a, b) => a - b);
+
+                for (let i = 0; i < groupKeys.length - 1; i++) {
+                    const g1 = groups[groupKeys[i]] || [];
+                    const g2 = groups[groupKeys[i + 1]] || [];
+                    
+                    for (let term1 of g1) {
+                        for (let term2 of g2) {
+                            const diff = diffBits(term1.bits, term2.bits);
+                            if (diff.count === 1) {
+                                combinedAny = true;
+                                const newBits = term1.bits.split('');
+                                newBits[diff.index] = '-';
+                                const newBitsStr = newBits.join('');
+                                const newCovers = Array.from(new Set([...term1.covers, ...term2.covers]));
+                                const onesCount = (newBitsStr.match(/1/g) || []).length;
+                                
+                                if (!nextGroups[onesCount]) nextGroups[onesCount] = [];
+                                if (!nextGroups[onesCount].some(t => t.bits === newBitsStr && arraysEqual(t.covers, newCovers))) {
+                                    nextGroups[onesCount].push({ bits: newBitsStr, covers: newCovers, combined: false });
+                                }
+                                term1.combined = true;
+                                term2.combined = true;
+                            }
+                        }
+                    }
+                }
+
+                for (let k of groupKeys) {
+                    for (let t of groups[k]) {
+                        if (!t.combined) {
+                            if (!primeImplicants.some(p => p.bits === t.bits)) {
+                                primeImplicants.push({ bits: t.bits, covers: t.covers });
+                            }
+                        }
+                    }
+                }
+
+                if (!combinedAny) break;
+                groups = nextGroups;
+            }
+
+            const primes = primeImplicants.map(p => ({ bits: p.bits, covers: p.covers }));
+            const coverMap = {};
+            
+            for (let m of minterms) {
+                coverMap[m] = [];
+                for (let i = 0; i < primes.length; i++) {
+                    if (covers(primes[i].bits, m, n)) coverMap[m].push(i);
+                }
+            }
+
+            const selected = new Set();
+            const coveredMinterms = new Set();
+            
+            for (let m of minterms) {
+                if (coverMap[m].length === 1) {
+                    const pi = coverMap[m][0];
+                    selected.add(pi);
+                }
+            }
+
+            for (let pi of Array.from(selected)) {
+                for (let m of minterms) {
+                    if (covers(primes[pi].bits, m, n)) coveredMinterms.add(m);
+                }
+            }
+
+            let remaining = minterms.filter(m => !coveredMinterms.has(m));
+
+            while (remaining.length > 0) {
+                const scores = new Array(primes.length).fill(0);
+                for (let i = 0; i < primes.length; i++) {
+                    for (let m of remaining) {
+                        if (covers(primes[i].bits, m, n)) scores[i]++;
+                    }
+                }
+
+                let bestIdx = -1, bestScore = -1;
+                for (let i = 0; i < scores.length; i++) {
+                    if (scores[i] > bestScore) {
+                        bestScore = scores[i];
+                        bestIdx = i;
+                    }
+                }
+
+                if (bestScore <= 0) break;
+                
+                selected.add(bestIdx);
+                remaining = remaining.filter(m => !covers(primes[bestIdx].bits, m, n));
+            }
+
+            return Array.from(selected).map(i => primes[i]);
+        }
+
+        function diffBits(a, b) {
+            let count = 0;
+            let index = -1;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) {
+                    count++;
+                    index = i;
+                }
+            }
+            return { count, index };
+        }
+
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            const A = [...a].sort();
+            const B = [...b].sort();
+            for (let i = 0; i < A.length; i++) {
+                if (A[i] !== B[i]) return false;
+            }
+            return true;
+        }
+
+        function covers(pattern, m, n) {
+            const bits = m.toString(2).padStart(n, '0');
+            for (let i = 0; i < n; i++) {
+                if (pattern[i] === '-') continue;
+                if (pattern[i] !== bits[i]) return false;
+            }
+            return true;
+        }
+
+        function bitsToExpr(bits, forSOP) {
+            const vars = getVariableNames();
+            let parts = [];
+            for (let i = 0; i < bits.length; i++) {
+                if (bits[i] === '-') continue;
+                const v = vars[i];
+                
+                if (forSOP) {
+                    // SOP: 1 = var, 0 = var'
+                    parts.push(bits[i] === '1' ? v : (v + "'"));
+                } else {
+                    // POS: 0 = var, 1 = var'
+                    parts.push(bits[i] === '0' ? v : (v + "'"));
+                }
+            }
+            
+            if (parts.length === 0) return forSOP ? '1' : '0';
+            
+            if (forSOP) {
+                return parts.join('');
+            } else {
+                return '(' + parts.join('+') + ')';
+            }
+        }
+
+        // ======================== SOLVE K-MAP ========================
+        function solveKmap() {
+            clearSvgOverlays();
+            
+            const targetVal = isSOP ? '1' : '0';
+            const minterms = [];
+            const dontcares = [];
+            
+            for (let i = 0; i < truthValues.length; i++) {
+                if (truthValues[i] === targetVal) minterms.push(i);
+                else if (truthValues[i] === 'X') dontcares.push(i);
+            }
+
+            if (minterms.length === 0 && dontcares.length === 0) {
+                document.getElementById('result').textContent = isSOP ? 'F = 0 (no minterms selected)' : 'F = 1 (no maxterms selected)';
+                document.getElementById('result').className = 'result-expression';
+                document.getElementById('verilogBtn').disabled = false;
+                solutionGroups = [];
+                drawCircuit([]);
+                return;
+            }
+
+            // Special case: all values are 1 (or 0 for POS)
+            if (minterms.length + dontcares.length === truthValues.length) {
+                document.getElementById('result').textContent = isSOP ? 'F = 1' : 'F = 0';
+                document.getElementById('result').className = 'result-expression';
+                document.getElementById('verilogBtn').disabled = false;
+                solutionGroups = [];
+                drawCircuit([]);
+                return;
+            }
+
+            const groups = quineMcCluskey(minterms, dontcares, numVars);
+            solutionGroups = groups;
+            
+            // Build expression
+            const terms = groups.map(g => bitsToExpr(g.bits, isSOP));
+            let expr;
+            
+            if (isSOP) {
+                expr = terms.join(' + ');
+            } else {
+                expr = terms.join('');
+            }
+
+            document.getElementById('result').textContent = `F = ${expr}`;
+            document.getElementById('result').className = 'result-expression';
+            document.getElementById('verilogBtn').disabled = false;
+
+            // Display group legend
+            let legendHtml = '';
+            groups.forEach((group, idx) => {
+                const color = BORDER_COLORS[idx % BORDER_COLORS.length];
+                const term = bitsToExpr(group.bits, isSOP);
+                legendHtml += `<div class="group-legend-item">
+                    <span style="width: 12px; height: 12px; border-radius: 3px; background: ${color};"></span>
+                    ${term}
+                </div>`;
+            });
+            document.getElementById('groupLegend').innerHTML = legendHtml;
+
+            // Draw groups on K-map
+            if (numVars === 5) {
+                drawGroups(groups, 0);
+                drawGroups(groups, 1);
+            } else {
+                drawGroups(groups, 0);
+            }
+            
+            // Draw circuit
+            drawCircuit(groups);
+        }
+
+        function drawGroups(groups, tableIdx) {
+            const table = document.getElementById(`kmapTable${tableIdx}`);
+            const svg = document.getElementById(`kmapOverlay${tableIdx}`);
+            const wrapper = document.getElementById(`kmapWrapper${tableIdx}`);
+            
+            if (!table || !svg || !wrapper) return;
+            
+            setTimeout(() => {
+                const tableRect = table.getBoundingClientRect();
+                const wrapperRect = wrapper.getBoundingClientRect();
+                
+                svg.setAttribute('width', tableRect.width);
+                svg.setAttribute('height', tableRect.height);
+                svg.style.left = (tableRect.left - wrapperRect.left) + 'px';
+                svg.style.top = (tableRect.top - wrapperRect.top) + 'px';
+                
+                let svgContent = '';
+                
+                groups.forEach((group, idx) => {
+                    const color = GROUP_COLORS[idx % GROUP_COLORS.length];
+                    const borderColor = BORDER_COLORS[idx % BORDER_COLORS.length];
+                    
+                    group.covers.forEach(minterm => {
+                        const cellId = getKMapCellId(minterm);
+                        const cell = document.getElementById(cellId);
+                        
+                        if (cell) {
+                            // Check if this cell belongs to the current table
+                            if (numVars === 5) {
+                                const bin = minterm.toString(2).padStart(5, '0');
+                                const e = parseInt(bin[4]);
+                                if (e !== tableIdx) return;
+                            }
+                            
+                            const cellRect = cell.getBoundingClientRect();
+                            const x = cellRect.left - tableRect.left + 3;
+                            const y = cellRect.top - tableRect.top + 3;
+                            const w = cellRect.width - 6;
+                            const h = cellRect.height - 6;
+                            
+                            svgContent += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
+                                           rx="8" fill="${color}" stroke="${borderColor}" stroke-width="2" />`;
+                        }
+                    });
+                });
+                
+                svg.innerHTML = svgContent;
+            }, 50);
+        }
+
+        // ======================== CIRCUIT DIAGRAM ========================
+        function drawCircuit(groups) {
+            const canvas = document.getElementById('circuitCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (groups.length === 0) {
+                // Reset to default size and clear
+                canvas.width = 800;
+                canvas.height = 400;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+            
+            const vars = getVariableNames();
+            const startX = 50;
+            const startY = 60;
+            const gateSpacing = 60;
+            const gateX = 300;
+            
+            // Calculate required canvas height based on number of groups
+            const requiredHeight = Math.max(400, startY + 40 + (groups.length * gateSpacing) + 100);
+            
+            // Calculate required canvas width based on circuit complexity
+            const requiredWidth = Math.max(800, 700 + (numVars * 20));
+            
+            // Resize canvas if needed
+            canvas.width = requiredWidth;
+            canvas.height = requiredHeight;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = "bold 14px Arial";
+            ctx.strokeStyle = "#333";
+            ctx.fillStyle = "#333";
+            ctx.lineWidth = 2;
+            
+            // Draw input lines
+            vars.forEach((v, i) => {
+                const x = startX + (i * 40);
+                ctx.fillText(v, x - 5, startY - 20);
+                ctx.beginPath();
+                ctx.moveTo(x, startY);
+                ctx.lineTo(x, requiredHeight - 60);
+                ctx.stroke();
+            });
+            
+            // Draw gates for each group
+            let currentY = startY + 50;
+            const outputPoints = [];
+            
+            groups.forEach((group, groupIdx) => {
+                const inputs = [];
+                for (let i = 0; i < numVars; i++) {
+                    const char = group.bits[i];
+                    if (char !== '-') {
+                        let inverted = false;
+                        if (isSOP && char === '0') inverted = true;
+                        if (!isSOP && char === '1') inverted = true;
+                        inputs.push({ varIdx: i, inverted: inverted });
+                    }
+                }
+                
+                if (inputs.length === 0) return;
+                
+                const gateY = currentY;
+                const color = BORDER_COLORS[groupIdx % BORDER_COLORS.length];
+                
+                inputs.forEach((inp, idx) => {
+                    const inputX = startX + (inp.varIdx * 40);
+                    const wireY = gateY + (idx * 14) - ((inputs.length - 1) * 7);
+                    
+                    // Connection dot
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(inputX, wireY, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Line to gate
+                    ctx.strokeStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(inputX, wireY);
+                    
+                    if (inp.inverted) {
+                        ctx.lineTo(gateX - 60, wireY);
+                        ctx.stroke();
+                        drawNot(ctx, gateX - 50, wireY, color);
+                        ctx.beginPath();
+                        ctx.moveTo(gateX - 32, wireY);
+                        ctx.lineTo(gateX, wireY);
+                        ctx.stroke();
+                    } else {
+                        ctx.lineTo(gateX, wireY);
+                        ctx.stroke();
+                    }
+                });
+                
+                ctx.strokeStyle = color;
+                ctx.fillStyle = "white";
+                
+                if (isSOP) {
+                    drawAnd(ctx, gateX, gateY, color);
+                } else {
+                    drawOr(ctx, gateX, gateY, color);
+                }
+                
+                outputPoints.push({ x: gateX + 50, y: gateY });
+                currentY += gateSpacing;
+            });
+            
+            // Draw final gate
+            if (outputPoints.length > 0) {
+                const finalX = requiredWidth - 150;
+                const collectX = finalX - 60;
+                const finalY = startY + 50 + ((groups.length - 1) * gateSpacing / 2);
+                
+                ctx.strokeStyle = "#333";
+                
+                outputPoints.forEach(pt => {
+                    ctx.beginPath();
+                    ctx.moveTo(pt.x, pt.y);
+                    ctx.lineTo(collectX, pt.y);
+                    ctx.lineTo(collectX, finalY);
+                    ctx.stroke();
+                });
+                
+                // Draw connecting line to final gate
+                ctx.beginPath();
+                ctx.moveTo(collectX, finalY);
+                ctx.lineTo(finalX, finalY);
+                ctx.stroke();
+                
+                ctx.fillStyle = "white";
+                
+                if (isSOP) {
+                    drawOr(ctx, finalX, finalY, "#333");
+                } else {
+                    drawAnd(ctx, finalX, finalY, "#333");
+                }
+                
+                // Output line
+                ctx.strokeStyle = "#333";
+                ctx.beginPath();
+                ctx.moveTo(finalX + 50, finalY);
+                ctx.lineTo(finalX + 90, finalY);
+                ctx.stroke();
+                
+                ctx.fillStyle = "#333";
+                ctx.font = "bold 16px Arial";
+                ctx.fillText("F", finalX + 95, finalY + 5);
+            }
+        }
+
+        function drawAnd(ctx, x, y, color) {
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y - 20);
+            ctx.lineTo(x, y + 20);
+            ctx.lineTo(x + 22, y + 20);
+            ctx.arc(x + 22, y, 20, Math.PI / 2, -Math.PI / 2, true);
+            ctx.lineTo(x, y - 20);
+            ctx.stroke();
+            ctx.fill();
+        }
+
+        function drawOr(ctx, x, y, color) {
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y - 20);
+            ctx.quadraticCurveTo(x + 12, y, x, y + 20);
+            ctx.quadraticCurveTo(x + 22, y + 20, x + 45, y);
+            ctx.quadraticCurveTo(x + 22, y - 20, x, y - 20);
+            ctx.stroke();
+            ctx.fill();
+        }
+
+        function drawNot(ctx, x, y, color) {
+            ctx.strokeStyle = color;
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.moveTo(x, y - 7);
+            ctx.lineTo(x + 14, y);
+            ctx.lineTo(x, y + 7);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 18, y, 4, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        // ======================== VERILOG GENERATION ========================
+        function generateVerilog() {
+            const vars = getVariableNames().map(v => v.toLowerCase());
+            const minterms = [];
+            const dontcares = [];
+            
+            const targetVal = isSOP ? '1' : '0';
+            for (let i = 0; i < truthValues.length; i++) {
+                if (truthValues[i] === targetVal) minterms.push(i);
+                else if (truthValues[i] === 'X') dontcares.push(i);
+            }
+
+            let verilogExpr = '';
+            if (minterms.length === 0) {
+                verilogExpr = isSOP ? "1'b0" : "1'b1";
+            } else if (minterms.length + dontcares.length === truthValues.length) {
+                verilogExpr = isSOP ? "1'b1" : "1'b0";
+            } else {
+                const terms = solutionGroups.map(p => {
+                    let parts = [];
+                    for (let i = 0; i < p.bits.length; i++) {
+                        if (p.bits[i] === '-') continue;
+                        const name = vars[i];
+                        if (isSOP) {
+                            parts.push(p.bits[i] === '1' ? name : ('~' + name));
+                        } else {
+                            parts.push(p.bits[i] === '0' ? name : ('~' + name));
+                        }
+                    }
+                    if (parts.length === 0) return isSOP ? "1'b1" : "1'b0";
+                    
+                    if (isSOP) {
+                        return '(' + parts.join(' & ') + ')';
+                    } else {
+                        return '(' + parts.join(' | ') + ')';
+                    }
+                });
+                
+                if (isSOP) {
+                    verilogExpr = terms.join(' | ');
+                } else {
+                    verilogExpr = terms.join(' & ');
+                }
+            }
+
+            const modeComment = isSOP ? 'Sum of Products (SOP)' : 'Product of Sums (POS)';
+            const verilogCode = `module kmap_function(
+    input ${vars.join(', ')},
+    output f
+);
+    // ${modeComment}
+    assign f = ${verilogExpr};
+
+endmodule`;
+
+            // For testbench, always use truth table 1s
+            const width = truthValues.length;
+            const expectedBits = truthValues.slice().reverse().map(x => (x === '1' ? '1' : '0')).join('');
+            
+            const testbenchCode = `// Testbench for kmap_function (${modeComment})
+module tb;
+    reg ${vars.join(', ')};
+    wire f;
+    integer i;
+
+    kmap_function uut(.${vars.map(v => `${v}(${v})`).join(', ')}, .f(f));
+
+    reg [${width - 1}:0] expected = ${width}'b${expectedBits};
+
+    initial begin
+        $display("${vars.map(v => v.toUpperCase()).join(' ')} | f | exp");
+        for (i = 0; i < ${width}; i = i + 1) begin
+            {${vars.join(',')}} = i;
+            #1;
+            $display("${vars.map(() => '%b').join(' ')} | %b | %b", ${vars.join(', ')}, f, expected[i]);
+            if (f !== expected[i]) 
+                $display("Mismatch at vector %0d! expected %b got %b", i, expected[i], f);
+        end
+        $finish;
+    end
+endmodule`;
+
+            const verilogDiv = document.getElementById('verilogDiv');
+            verilogDiv.innerHTML = `
+                <div class="verilog-section">
+                    <div class="verilog-header">
+                        <h4 style="margin: 0; color: var(--accent);">Verilog Module (${isSOP ? 'SOP' : 'POS'})</h4>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-outline" id="copyVerilogBtn" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                                Copy
+                            </button>
+                            <button class="btn btn-outline" id="downloadVerilogBtn" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7,10 12,15 17,10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                    <pre class="verilog-code" id="verilogCodeBlock"></pre>
+                </div>
+
+                <div class="verilog-section">
+                    <div class="verilog-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.2)); border-color: rgba(59, 130, 246, 0.2);">
+                        <h4 style="margin: 0; color: var(--primary);">Testbench</h4>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-outline" id="copyTestbenchBtn" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                                Copy
+                            </button>
+                            <button class="btn btn-outline" id="downloadTestbenchBtn" style="padding: 0.25rem 0.75rem; font-size: 0.9rem;">
+                                <svg class="icon" viewBox="0 0 24 24">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7,10 12,15 17,10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                    <pre class="verilog-code" id="testbenchCodeBlock" style="border-color: rgba(59, 130, 246, 0.2);"></pre>
+                </div>
+
+                <div style="background: var(--muted); padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
+                    <p style="font-weight: bold; margin-bottom: 0.5rem;">Usage Instructions:</p>
+                    <ul style="list-style-type: disc; padding-left: 1.5rem; line-height: 1.6;">
+                        <li>Save the Verilog module as <code style="background: var(--card); padding: 0.2rem 0.4rem; border-radius: 0.25rem;">kmap_function.v</code></li>
+                        <li>Save the testbench as <code style="background: var(--card); padding: 0.2rem 0.4rem; border-radius: 0.25rem;">tb_kmap_function.v</code></li>
+                        <li>Compile and simulate using your preferred Verilog simulator (ModelSim, Vivado, etc.)</li>
+                        <li>The testbench will verify the function against all possible input combinations</li>
+                    </ul>
+                </div>
+            `;
+
+            // Set code content using textContent to avoid escaping issues
+            document.getElementById('verilogCodeBlock').textContent = verilogCode;
+            document.getElementById('testbenchCodeBlock').textContent = testbenchCode;
+
+            // Add event listeners for buttons
+            document.getElementById('copyVerilogBtn').addEventListener('click', function() {
+                copyToClipboard(verilogCode, 'Verilog code');
+            });
+            document.getElementById('downloadVerilogBtn').addEventListener('click', function() {
+                downloadFile(verilogCode, 'kmap_function.v');
+            });
+            document.getElementById('copyTestbenchBtn').addEventListener('click', function() {
+                copyToClipboard(testbenchCode, 'Testbench');
+            });
+            document.getElementById('downloadTestbenchBtn').addEventListener('click', function() {
+                downloadFile(testbenchCode, 'tb_kmap_function.v');
+            });
+        }
+
+        function copyToClipboard(text, label) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`${label} copied to clipboard!`);
+            }).catch(() => {
+                alert('Copy failed. Please copy manually.');
+            });
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
