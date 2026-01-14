@@ -27,4 +27,5 @@ An **interactive Karnaugh Map (K-Map) based digital logic tool** that simplifies
     - Logic circuit diagram
     - Verilog code + testbench
 
-### Link of website deployed  
+### Link of website deployed 
+ [Kmap Solver website link](https://darapooja.github.io/kmap-verilog-solver/)
